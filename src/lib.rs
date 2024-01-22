@@ -121,12 +121,12 @@ fn parse(expression: &str) -> Vec<Token> {
     postfix
 }
 
-fn get_result(x: f64, postfix: Vec<Token>) -> f64 {
+fn get_result(x: f64, postfix: &Vec<Token>) -> f64 {
     let mut stack:Vec<f64> = vec![];
     for token in postfix {
         match token {
             Token::Variable => stack.push(x),
-            Token::Number(num) => stack.push(num as f64),
+            Token::Number(num) => stack.push(*num as f64),
             Token::Operator(op, _precedence) => {
                 let right = stack.pop().expect("Right operand should exist!");
                 let left = stack.pop().expect("Left operand should exist!");
@@ -155,26 +155,29 @@ fn get_result(x: f64, postfix: Vec<Token>) -> f64 {
     stack.pop().expect("Result of the calculation cannot be returned!")
 }
 
-pub fn calculate(x: f64, expression: &str) -> f64 {
+pub fn calculate_once(x: f64, expression: &str) -> f64 {
     let tokens = parse(expression);
-    let res = get_result(x, tokens);
+    let res = get_result(x, &tokens);
     res
 }
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
+pub fn calculate(arr: Vec<f64>, expression: &str) -> Vec<f64> {
+    let tokens = parse(expression);
+    let res = arr.iter().map(|x| get_result(*x, &tokens)).collect();
+    res
+}
+
+pub fn float_range(start: f64, threshold: f64, step_size: f64) -> impl Iterator<Item = f64> {
+    std::iter::successors(Some(start), move |&prev| {
+        let next = prev + step_size;
+        (next < threshold).then_some(next)
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::collections::HashMap;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
 
     #[test]
     fn calculator_test() {
@@ -189,7 +192,7 @@ mod tests {
         for v in variations {
             let postfix = parse(v.0);
             assert_eq!(format!("{:?}", postfix), v.1.0);
-            let result = get_result(4_f64, postfix);
+            let result = get_result(4_f64, &postfix);
             assert_eq!(result, v.1.1);
         }
     }
