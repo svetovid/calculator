@@ -20,62 +20,43 @@ impl Debug for Token {
     }
 }
 
-// fn materialize_function(mut alph_str: &String, mut operators: &Vec<Token>) {
-//     if !alph_str.is_empty() {
-//         operators.push(Token::Function(alph_str.clone()));
-//         alph_str.clear();
-//     }
-// }
+fn materialize_function(alph_str: &mut String, postfix: &mut Vec<Token>, operators: &mut Vec<Token>) {
+    if !alph_str.is_empty() {
+        if alph_str == "x" {
+            postfix.push(Token::Variable);
+        }
+        else {
+            operators.push(Token::Function(alph_str.clone()));
+        }
+        alph_str.clear();
+    }
+}
 
-// fn materialize_number(mut num_str: String, mut postfix: Vec<Token>) {
-//     if let Ok(num) = num_str.parse() {
-//         postfix.push(Token::Number(num));
-//     }
-//     num_str.clear();
-// }
+fn materialize_number(num_str: &mut String, postfix: &mut Vec<Token>) {
+    if let Ok(num) = num_str.parse() {
+        postfix.push(Token::Number(num));
+    }
+    num_str.clear();
+}
 
 fn parse(expression: &str) -> Vec<Token> {
     let mut postfix = Vec::new();
     let mut operators = Vec::new();
     let mut num_str = String::new();
     let mut alph_str = String::new();
-
     for t in expression.chars() {
         match t {
             '0'..='9' => {
-                if !alph_str.is_empty() {
-                    if alph_str == "x" {
-                        postfix.push(Token::Variable);
-                    }
-                    else {
-                        operators.push(Token::Function(alph_str.clone()));
-                    }
-                    alph_str.clear();
-                }
+                materialize_function(&mut alph_str, &mut postfix, &mut operators);
                 num_str.push(t);
             },
             'a'..='z' => {
-                if let Ok(num) = num_str.parse() {
-                    postfix.push(Token::Number(num));
-                }
-                num_str.clear();
+                materialize_number(&mut num_str, &mut postfix);
                 alph_str.push(t);
             },
             '*' | '/' | '+' | '-' => {
-                if let Ok(num) = num_str.parse() {
-                    postfix.push(Token::Number(num));
-                }
-                num_str.clear();
-                if !alph_str.is_empty() {
-                    if alph_str == "x" {
-                        postfix.push(Token::Variable);
-                    }
-                    else {
-                        operators.push(Token::Function(alph_str.clone()));
-                    }
-                    alph_str.clear();
-                }
-
+                materialize_number(&mut num_str, &mut postfix);
+                materialize_function(&mut alph_str, &mut postfix, &mut operators);
                 let mut precedence = 2;
                 while precedence > 1 {
                     if let Some(operator) = operators.last() {
@@ -101,37 +82,13 @@ fn parse(expression: &str) -> Vec<Token> {
                 operators.push(operator);
             },
             '(' => {
-                if let Ok(num) = num_str.parse() {
-                    postfix.push(Token::Number(num));
-                }
-                num_str.clear();
-                if !alph_str.is_empty() {
-                    if alph_str == "x" {
-                        postfix.push(Token::Variable);
-                    }
-                    else {
-                        operators.push(Token::Function(alph_str.clone()));
-                    }
-                    alph_str.clear();
-                }
-
+                materialize_number(&mut num_str, &mut postfix);
+                materialize_function(&mut alph_str, &mut postfix, &mut operators);
                 operators.push(Token::Operator(t, 0));
             },
             ')' => {
-                if let Ok(num) = num_str.parse() {
-                    postfix.push(Token::Number(num));
-                }
-                num_str.clear();
-                if !alph_str.is_empty() {
-                    if alph_str == "x" {
-                        postfix.push(Token::Variable);
-                    }
-                    else {
-                        operators.push(Token::Function(alph_str.clone()));
-                    }
-                    alph_str.clear();
-                }
-
+                materialize_number(&mut num_str, &mut postfix);
+                materialize_function(&mut alph_str, &mut postfix, &mut operators);
                 let mut literal = '\\';
                 while literal != '(' {
                     if let Some(operator) = operators.last() {
@@ -153,28 +110,14 @@ fn parse(expression: &str) -> Vec<Token> {
                     else { break; }
                 }
             },
-            _ => todo!()
+            _ => panic!("symbol '{}' is not supported", t)
         }
     }
-
-    if let Ok(num) = num_str.parse() {
-        postfix.push(Token::Number(num));
-    }
-    num_str.clear();
-    if !alph_str.is_empty() {
-        if alph_str == "x" {
-            postfix.push(Token::Variable);
-        }
-        else {
-            operators.push(Token::Function(alph_str.clone()));
-        }
-        alph_str.clear();
-    }
-
+    materialize_number(&mut num_str, &mut postfix);
+    materialize_function(&mut alph_str, &mut postfix, &mut operators);
     while let Some(op) = operators.pop() {
         postfix.push(op);
     }
-
     postfix
 }
 
@@ -192,7 +135,7 @@ fn get_result(x: f64, postfix: Vec<Token>) -> f64 {
                     '-' => stack.push(left - right),
                     '*' => stack.push(left * right),
                     '/' => stack.push(left / right),
-                    _ => todo!()
+                    _ => panic!("symbol '{}' is not supported", op)
                 };
             },
             Token::Function(fun) => {
