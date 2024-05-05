@@ -1,2 +1,2 @@
 [workspace]
-members = ["calc_lib", "web_api"]
+members = ["calc_lib", "web_api", "calculator-ui"]
