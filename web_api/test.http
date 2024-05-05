@@ -1,0 +1,24 @@
+
+GET http://localhost:3000/
+
+### Calculate once
+
+POST http://localhost:3000/calculate
+content-type: application/json
+
+{
+    "formula": "x*2+7",
+    "x": 8
+}
+
+### Calculate range
+
+POST http://localhost:3000/calculate/range
+content-type: application/json
+
+{
+    "formula": "x*2+7",
+    "start": 5,
+    "end": 100,
+    "step": 5
+}
